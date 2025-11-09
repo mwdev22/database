@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
-	"github.com/mwdev22/core/config"
+	config "github.com/mwdev22/gocfg"
 )
 
 type Sqlx struct {

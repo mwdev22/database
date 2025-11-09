@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/mwdev22/core/config"
+	config "github.com/mwdev22/gocfg"
 )
 
 type Pgx struct {
