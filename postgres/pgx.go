@@ -9,7 +9,27 @@ import (
 	"github.com/mwdev22/core/config"
 )
 
-func New(cfg *config.DatabaseConfig) (*pgxpool.Pool, error) {
+type Pgx struct {
+	Config *config.DatabaseConfig
+	Pool   *pgxpool.Pool
+}
+
+func New(cfg *config.DatabaseConfig) (*Pgx, error) {
+	return &Pgx{
+		Config: cfg,
+	}, nil
+}
+
+func (pg *Pgx) Connect() error {
+	pool, err := connect(pg.Config)
+	if err != nil {
+		return err
+	}
+	pg.Pool = pool
+	return nil
+}
+
+func connect(cfg *config.DatabaseConfig) (*pgxpool.Pool, error) {
 	configStr := cfg.URI
 
 	conf, err := pgxpool.ParseConfig(configStr)

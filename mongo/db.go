@@ -10,7 +10,29 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func ConnectMongoDB(uri, dbName string) (*mongo.Database, *mongo.Client, error) {
+type MongoDB struct {
+	Uri    string
+	Db     *mongo.Database
+	Client *mongo.Client
+}
+
+func New(Uri string) *MongoDB {
+	return &MongoDB{
+		Uri: Uri,
+	}
+}
+
+func (mdb *MongoDB) Connect(dbName string) error {
+	db, client, err := connect(mdb.Uri, dbName)
+	if err != nil {
+		return err
+	}
+	mdb.Db = db
+	mdb.Client = client
+	return nil
+}
+
+func connect(uri, dbName string) (*mongo.Database, *mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
