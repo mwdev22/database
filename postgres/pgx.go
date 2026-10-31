@@ -9,6 +9,8 @@ import (
 	config "github.com/mwdev22/gocfg"
 )
 
+const connectTimeout = 10 * time.Second
+
 type Pgx struct {
 	Config *config.DatabaseConfig
 	Pool   *pgxpool.Pool
@@ -37,18 +39,33 @@ func connect(cfg *config.DatabaseConfig) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("failed to parse db config: %w", err)
 	}
 
-	conf.MaxConns = int32(cfg.MaxOpenConns)
-	conf.MinConns = int32(cfg.MinIdleConns)
-	conf.MaxConnLifetime = time.Duration(cfg.ConnMaxLifetime) * time.Minute
+	applyPoolConfig(conf, cfg)
 
+	// the pool keeps this ctx for creating min conns in the background, so it must outlive connect
 	dbpool, err := pgxpool.NewWithConfig(context.Background(), conf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create db pool: %w", err)
 	}
 
-	if err := dbpool.Ping(context.Background()); err != nil {
+	ctx, cancel := context.WithTimeout(context.Background(), connectTimeout)
+	defer cancel()
+	if err := dbpool.Ping(ctx); err != nil {
+		dbpool.Close()
 		return nil, fmt.Errorf("failed to ping db: %w", err)
 	}
 
 	return dbpool, nil
+}
+
+// zero values keep pgx defaults and pool_* params from the uri
+func applyPoolConfig(conf *pgxpool.Config, cfg *config.DatabaseConfig) {
+	if cfg.MaxOpenConns > 0 {
+		conf.MaxConns = int32(cfg.MaxOpenConns)
+	}
+	if cfg.MinIdleConns > 0 {
+		conf.MinConns = int32(cfg.MinIdleConns)
+	}
+	if cfg.ConnMaxLifetime > 0 {
+		conf.MaxConnLifetime = time.Duration(cfg.ConnMaxLifetime) * time.Minute
+	}
 }
