@@ -41,7 +41,6 @@ func connect(cfg *config.DatabaseConfig) (*pgxpool.Pool, error) {
 
 	applyPoolConfig(conf, cfg)
 
-	// the pool keeps this ctx for creating min conns in the background, so it must outlive connect
 	dbpool, err := pgxpool.NewWithConfig(context.Background(), conf)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create db pool: %w", err)
@@ -57,7 +56,6 @@ func connect(cfg *config.DatabaseConfig) (*pgxpool.Pool, error) {
 	return dbpool, nil
 }
 
-// zero values keep pgx defaults and pool_* params from the uri
 func applyPoolConfig(conf *pgxpool.Config, cfg *config.DatabaseConfig) {
 	if cfg.MaxOpenConns > 0 {
 		conf.MaxConns = int32(cfg.MaxOpenConns)

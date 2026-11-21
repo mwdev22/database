@@ -8,7 +8,6 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-// no live server: a closed port makes every command fail, which is the case the fixes are about
 func newUnreachable(t *testing.T) *RedisCache {
 	t.Helper()
 	c := New(&redis.Options{

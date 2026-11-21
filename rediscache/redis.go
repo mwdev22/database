@@ -52,7 +52,6 @@ func (c *RedisCache) SetBytes(ctx context.Context, key string, value []byte, exp
 }
 
 func (c *RedisCache) Keys(ctx context.Context, pattern string) ([]string, error) {
-	// SCAN can return a key more than once, KEYS never does
 	seen := make(map[string]struct{})
 	keys := []string{}
 	iter := c.cli.Scan(ctx, 0, pattern, scanCount).Iterator()
@@ -74,7 +73,6 @@ func (c *RedisCache) Del(ctx context.Context, key string) error {
 	return c.cli.Del(ctx, key).Err()
 }
 
-// fails open: a redis error reads as a miss, use Has where that matters
 func (c *RedisCache) Exists(ctx context.Context, key string) bool {
 	ok, _ := c.Has(ctx, key)
 	return ok
