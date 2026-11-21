@@ -8,6 +8,8 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+const scanCount = 100
+
 type RedisCache struct {
 	cli *redis.Client
 }
@@ -50,7 +52,21 @@ func (c *RedisCache) SetBytes(ctx context.Context, key string, value []byte, exp
 }
 
 func (c *RedisCache) Keys(ctx context.Context, pattern string) ([]string, error) {
-	return c.cli.Keys(ctx, pattern).Result()
+	seen := make(map[string]struct{})
+	keys := []string{}
+	iter := c.cli.Scan(ctx, 0, pattern, scanCount).Iterator()
+	for iter.Next(ctx) {
+		key := iter.Val()
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		keys = append(keys, key)
+	}
+	if err := iter.Err(); err != nil {
+		return nil, err
+	}
+	return keys, nil
 }
 
 func (c *RedisCache) Del(ctx context.Context, key string) error {
@@ -58,5 +74,14 @@ func (c *RedisCache) Del(ctx context.Context, key string) error {
 }
 
 func (c *RedisCache) Exists(ctx context.Context, key string) bool {
-	return c.cli.Exists(ctx, key).Val() > 0
+	ok, _ := c.Has(ctx, key)
+	return ok
+}
+
+func (c *RedisCache) Has(ctx context.Context, key string) (bool, error) {
+	n, err := c.cli.Exists(ctx, key).Result()
+	if err != nil {
+		return false, err
+	}
+	return n > 0, nil
 }
